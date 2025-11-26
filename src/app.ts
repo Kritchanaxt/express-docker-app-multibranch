@@ -59,7 +59,6 @@ app.get('/api/orders', (_: Request, res: Response) => {
   res.json(orders)
 })
 
-
 // Export app สำหรับ testing
 export default app
 

@@ -58,5 +58,10 @@ app.get('/api/orders', (_: Request, res: Response) => {
 })
 
 
-// Start server
-app.listen(port, () => console.log(`Application is running on port ${port}`))
+// Export app สำหรับ testing
+export default app
+
+// Start server (รันเฉพาะเมื่อไม่ได้ import จากที่อื่น)
+if (require.main === module) {
+  app.listen(port, () => console.log(`Application is running on port ${port}`))
+}

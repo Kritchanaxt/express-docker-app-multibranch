@@ -63,7 +63,8 @@ pipeline {
         PROD_APP_NAME             = "express-app-prod"
         PROD_HOST_PORT            = "3000"
 
-        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
+        // กำหนด PATH ให้รวม Docker path สำหรับ macOS
+        PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
     }
 
     // กำหนด input parameters สำหรับเลือก Action (Build & Deploy หรือ Rollback)
@@ -94,26 +95,28 @@ pipeline {
         }
 
         // Stage 2: ติดตั้ง dependencies และ Run test
-        // ใช้ Node.js plugin (ต้องติดตั้ง NodeJS plugin ก่อน) ใน Jenkins หรือ Node.js ใน Docker 
+        // ใช้ Docker run แทนการใช้ docker.image().inside() เพื่อหลีกเลี่ยงปัญหา PATH
         // ถ้ามี package-lock.json ให้ใช้ npm ci แทน npm install จะเร็วและล็อกเวอร์ชันชัดเจนกว่า
        stage('Install & Test') {
             // เงื่อนไข: เมื่อ ACTION คือ 'Build & Deploy' เท่านั้น
             when { expression { params.ACTION == 'Build & Deploy' } }
             steps {
                 echo "Running tests inside a consistent Docker environment..."
-                 script {
-                    docker.image('node:22-alpine').inside {
-                        sh '''
-                            if [ -f package-lock.json ]; then npm ci; else npm install; fi
-                            npm test
-                        '''
-                    }
+                script {
+                    // ใช้ sh command เรียก docker run โดยตรงแทน
+                    sh '''
+                        docker run --rm \
+                            -v "$(pwd):/app" \
+                            -w /app \
+                            node:22-alpine \
+                            sh -c "if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm test"
+                    '''
                 }
             }
         }
 
         // Stage 3: สร้าง Docker Image
-        // ใช้ Docker ที่ติดตั้งบน Jenkins agent (ต้องติดตั้ง Docker plugin ก่อน) ใน Jenkins หรือ Docker ใน Docker
+        // ใช้ shell commands แทน Docker Pipeline plugin เพื่อหลีกเลี่ยงปัญหา PATH
         stage('Build & Push Docker Image') {
             when { expression { params.ACTION == 'Build & Deploy' } }
             steps {
@@ -121,17 +124,29 @@ pipeline {
                     def imageTag = (env.BRANCH_NAME == 'main') ? sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim() : "dev-${env.BUILD_NUMBER}"
                     env.IMAGE_TAG = imageTag
                     
-                    // [ปรับปรุง] ใช้ docker.withRegistry() เพื่อความปลอดภัยและเรียบง่าย
-                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_HUB_CREDENTIALS_ID) {
-                        echo "Building image: ${DOCKER_REPO}:${env.IMAGE_TAG}"
-                        def customImage = docker.build("${DOCKER_REPO}:${env.IMAGE_TAG}", "--target production .")
+                    echo "Building image: ${DOCKER_REPO}:${env.IMAGE_TAG}"
+                    
+                    // ใช้ withCredentials เพื่อ login Docker Hub อย่างปลอดภัย
+                    withCredentials([usernamePassword(
+                        credentialsId: DOCKER_HUB_CREDENTIALS_ID,
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        sh """
+                            echo "\${DOCKER_PASS}" | docker login -u "\${DOCKER_USER}" --password-stdin
+                            docker build --target production -t ${DOCKER_REPO}:${env.IMAGE_TAG} .
+                            docker push ${DOCKER_REPO}:${env.IMAGE_TAG}
+                        """
                         
-                        echo "Pushing images to Docker Hub..."
-                        customImage.push()
                         // Push 'latest' tag เฉพาะเมื่อเป็น branch main
                         if (env.BRANCH_NAME == 'main') {
-                            customImage.push('latest')
+                            sh """
+                                docker tag ${DOCKER_REPO}:${env.IMAGE_TAG} ${DOCKER_REPO}:latest
+                                docker push ${DOCKER_REPO}:latest
+                            """
                         }
+                        
+                        sh 'docker logout'
                     }
                 }
             }

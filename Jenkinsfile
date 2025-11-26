@@ -133,20 +133,31 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
                         sh """
-                            echo "\${DOCKER_PASS}" | docker login -u "\${DOCKER_USER}" --password-stdin
+                            # สร้าง temporary Docker config ที่ไม่ใช้ keychain
+                            export DOCKER_CONFIG=\$(mktemp -d)
+                            echo '{"auths":{}}' > "\${DOCKER_CONFIG}/config.json"
+                            
+                            # Login โดยใช้ temporary config
+                            echo "\${DOCKER_PASS}" | docker --config "\${DOCKER_CONFIG}" login -u "\${DOCKER_USER}" --password-stdin
+                            
+                            # Build Docker image
                             docker build --target production -t ${DOCKER_REPO}:${env.IMAGE_TAG} .
-                            docker push ${DOCKER_REPO}:${env.IMAGE_TAG}
+                            
+                            # Push image โดยใช้ temporary config
+                            docker --config "\${DOCKER_CONFIG}" push ${DOCKER_REPO}:${env.IMAGE_TAG}
                         """
                         
                         // Push 'latest' tag เฉพาะเมื่อเป็น branch main
                         if (env.BRANCH_NAME == 'main') {
                             sh """
+                                export DOCKER_CONFIG=\$(mktemp -d)
+                                echo '{"auths":{}}' > "\${DOCKER_CONFIG}/config.json"
+                                echo "\${DOCKER_PASS}" | docker --config "\${DOCKER_CONFIG}" login -u "\${DOCKER_USER}" --password-stdin
+                                
                                 docker tag ${DOCKER_REPO}:${env.IMAGE_TAG} ${DOCKER_REPO}:latest
-                                docker push ${DOCKER_REPO}:latest
+                                docker --config "\${DOCKER_CONFIG}" push ${DOCKER_REPO}:latest
                             """
                         }
-                        
-                        sh 'docker logout'
                     }
                 }
             }

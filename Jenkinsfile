@@ -64,7 +64,7 @@ pipeline {
         PROD_HOST_PORT            = "3002"
 
         // กำหนด PATH ให้รวม Docker path สำหรับ macOS
-        PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
+        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
     }
 
     // กำหนด input parameters สำหรับเลือก Action (Build & Deploy หรือ Rollback)
@@ -192,7 +192,7 @@ pipeline {
             // ส่งข้อมูลไปยัง n8n webhook เมื่อ deploy สำเร็จ
             post {
                 success {
-                    sendNotificationToN8n('success', 'Deploy to DEV (Local Docker)', env.IMAGE_TAG, env.DEV_APP_NAME, env.DEV_HOST_PORT)
+                    sendNotificationToN8n('success', 'Deploy to DEV', env.IMAGE_TAG, env.DEV_APP_NAME, env.DEV_HOST_PORT)
                 }
             }
         }
@@ -234,7 +234,7 @@ pipeline {
             // ส่งข้อมูลไปยัง n8n webhook เมื่อ deploy สำเร็จ
             post {
                 success {
-                    sendNotificationToN8n('success', 'Deploy to PRODUCTION (Local Docker)', env.IMAGE_TAG, env.PROD_APP_NAME, env.PROD_HOST_PORT)
+                    sendNotificationToN8n('success', 'Deploy to PRODUCTION', env.IMAGE_TAG, env.PROD_APP_NAME, env.PROD_HOST_PORT)
                 }
             }
         }

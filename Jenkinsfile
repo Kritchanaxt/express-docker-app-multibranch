@@ -57,11 +57,11 @@ pipeline {
 
         // กำหนดค่าสำหรับจำลอง DEV environment บน Local
         DEV_APP_NAME              = "express-app-dev"
-        DEV_HOST_PORT             = "3001"
+        DEV_HOST_PORT             = "3003"
 
         // กำหนดค่าสำหรับจำลอง PROD environment บน Local
         PROD_APP_NAME             = "express-app-prod"
-        PROD_HOST_PORT            = "3000"
+        PROD_HOST_PORT            = "3002"
 
         // กำหนด PATH ให้รวม Docker path สำหรับ macOS
         PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"

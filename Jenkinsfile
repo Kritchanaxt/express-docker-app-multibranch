@@ -18,7 +18,7 @@ def sendNotificationToN8n(String status, String stageName, String imageTag, Stri
                 build    : env.BUILD_NUMBER,
                 image    : "${env.DOCKER_REPO}:${imageTag}",
                 container: containerName,
-                url      : "http://localhost:${hostPort}/",
+                url      : "http://YOUR_VPS_IP:${hostPort}/",
                 timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX")
             ]
             def body = groovy.json.JsonOutput.toJson(payload)
@@ -171,7 +171,7 @@ pipeline {
         // ดึง image ล่าสุดจาก Docker Hub มาใช้งาน
         // หยุดและลบ container เก่าที่ชื่อ ${APP_NAME} (ถ้ามี)
         // สร้างและรัน container ใหม่จาก image ล่าสุด
-        stage('Deploy to DEV (Local Docker)') {
+        stage('Deploy to DEV') {
             when {
                 expression { params.ACTION == 'Build & Deploy' }
                 branch 'develop'
@@ -213,7 +213,7 @@ pipeline {
 
         // Stage 8: Deploy ไปยังเครื่อง local (Production)
         // ดึง image ล่าสุดจาก Docker Hub มาใช้งาน
-        stage('Deploy to PRODUCTION (Local Docker)') {
+        stage('Deploy to PRODUCTION') {
             when {
                 expression { params.ACTION == 'Build & Deploy' }
                 branch 'main'

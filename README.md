@@ -162,7 +162,7 @@ docker run -d -p 3000:3000 --name express-app express-docker-app
 # Start development environment
 docker-compose -f docker-compose.dev.yml up
 
-# Access the app at http://localhost:3002
+# Access the app at http://YOUR_VPS_IP:3002
 ```
 
 ### Multi-Stage Build

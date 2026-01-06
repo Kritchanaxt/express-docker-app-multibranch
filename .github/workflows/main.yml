@@ -44,9 +44,9 @@ on:
 env:
   DOCKER_REPO: kritchanaxt/express-docker-app
   DEV_APP_NAME: express-app-dev
-  DEV_HOST_PORT: 3001
+  DEV_HOST_PORT: 3003
   PROD_APP_NAME: express-app-prod
-  PROD_HOST_PORT: 3000
+  PROD_HOST_PORT: 3002
 
 # กำหนด Jobs
 jobs:
@@ -151,7 +151,7 @@ jobs:
     if: github.ref_name == 'develop' && github.event.inputs.action != 'Rollback'
     environment:
       name: development
-      url: http://localhost:${{ env.DEV_HOST_PORT }}
+      url: http://YOUR_VPS_IP:${{ env.DEV_HOST_PORT }}
     
     steps:
       # Step 1: Deploy to DEV (Local Docker)
@@ -184,7 +184,7 @@ jobs:
               \"build\": \"${{ github.run_number }}\",
               \"image\": \"${{ env.DOCKER_REPO }}:${{ needs.build-and-test.outputs.image_tag }}\",
               \"container\": \"${{ env.DEV_APP_NAME }}\",
-              \"url\": \"http://localhost:${{ env.DEV_HOST_PORT }}/\",
+              \"url\": \"http://YOUR_VPS_IP:${{ env.DEV_HOST_PORT }}/\",
               \"timestamp\": \"${TIMESTAMP}\"
             }" || echo "Failed to send notification"
   
@@ -215,7 +215,7 @@ jobs:
     if: github.ref_name == 'main' && github.event.inputs.action != 'Rollback'
     environment:
       name: production
-      url: http://localhost:${{ env.PROD_HOST_PORT }}
+      url: http://YOUR_VPS_IP:${{ env.PROD_HOST_PORT }}
     
     steps:
       # Step 1: Deploy to PROD (Local Docker)
@@ -247,7 +247,7 @@ jobs:
               \"build\": \"${{ github.run_number }}\",
               \"image\": \"${{ env.DOCKER_REPO }}:${{ needs.build-and-test.outputs.image_tag }}\",
               \"container\": \"${{ env.PROD_APP_NAME }}\",
-              \"url\": \"http://localhost:${{ env.PROD_HOST_PORT }}/\",
+              \"url\": \"http://YOUR_VPS_IP:${{ env.PROD_HOST_PORT }}/\",
               \"timestamp\": \"${TIMESTAMP}\"
             }" || echo "Failed to send notification"
   
@@ -321,7 +321,7 @@ jobs:
               \"build\": \"${{ github.run_number }}\",
               \"image\": \"${{ env.DOCKER_REPO }}:${{ github.event.inputs.rollback_tag }}\",
               \"container\": \"${APP_NAME}\",
-              \"url\": \"http://localhost:${HOST_PORT}/\",
+              \"url\": \"http://YOUR_VPS_IP:${HOST_PORT}/\",
               \"timestamp\": \"${TIMESTAMP}\"
             }" || echo "Failed to send notification"
   

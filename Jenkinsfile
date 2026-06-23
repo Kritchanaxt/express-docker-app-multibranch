@@ -10,6 +10,20 @@ def sendNotificationToN8n(String status, String stageName, String imageTag, Stri
     // ต้องสร้าง Credential นี้ใน Jenkins ก่อน ใช้งาน
     // โดยใช้ ID ว่า n8n-webhook
     script {
+        // ดึง IP ของ VPS อย่างปลอดภัยจาก Environment หรือ .env
+        def vpsIp = env.VPS_IP
+        if (!vpsIp && fileExists('.env')) {
+            def envFile = readFile('.env')
+            for (line in envFile.split('\n')) {
+                def trimmed = line.trim()
+                if (trimmed.startsWith('VPS_IP=')) {
+                    vpsIp = trimmed.substring('VPS_IP='.length()).trim()
+                    break
+                }
+            }
+        }
+        vpsIp = vpsIp ?: 'localhost'
+
         withCredentials([string(credentialsId: 'n8n-webhook', variable: 'N8N_WEBHOOK_URL')]) {
             def payload = [
                 project  : env.JOB_NAME,
@@ -18,7 +32,7 @@ def sendNotificationToN8n(String status, String stageName, String imageTag, Stri
                 build    : env.BUILD_NUMBER,
                 image    : "${env.DOCKER_REPO}:${imageTag}",
                 container: containerName,
-                url      : "http://YOUR_VPS_IP:${hostPort}/",
+                url      : "http://${vpsIp}:${hostPort}/",
                 timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX")
             ]
             def body = groovy.json.JsonOutput.toJson(payload)
